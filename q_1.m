@@ -61,6 +61,7 @@ end
 figure(1); clf;
 grid on;
 hold on;
+box on;
 %daspect([20 1 1]);
 %axis([-0.2,2.3,0.12,0.21]);
 %scatter(pRisk, pReturn, 'filled', 'LineWidth', 0.2);

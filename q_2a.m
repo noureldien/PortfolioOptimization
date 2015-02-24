@@ -1,69 +1,113 @@
 clc;
-close all;
-
-N_total = 113;
-N_train = int16(N_total/2);
-N_test = N_total - N_train;
 
 % load the data
 load('data\q_2.mat');
 
-% collect all the prices of the stocks in one big matrix
-stocks = [IHG, HSBC, ABF];
+% if we want to experience a smaller portfolio
+%returns = returns(:,1:5);
 
-% for each stock, get only the close price
-% this will be considered as the return for this stock
-% we will depend on only the close price, which is the 4th column
-returns = [stocks(:,4 + 0*6), stocks(:,4 + 1*6), stocks(:,4 + 2*6)];
+nAssets = size(returns,2);
+nTotal = size(returns,1);
+nTrain = int16(nTotal/2);
+nTest = nTotal - nTrain;
 
 % split the returns to train and test
-returns_train = returns(1:N_train,:);
-returns_test = returns(N_train+1:N_total,:);
+returnsTrain = returns(1:nTrain,:);
+returnsTest = returns(nTrain+1:nTotal,:);
 
 % get mean and covariance for these returns
-rMean = mean(returns_train);
-rCovar = cov(returns_train);
+rMean = mean(returnsTrain);
+rCovar = cov(returnsTrain);
 
 % simluated returns, help for testing
-returns_ = mvnrnd(rMean, rCovar, N_total);
+%returnsTrainSim = mvnrnd(rMean, rCovar, nTotal);
 
 % calcuate efficient forntier
-[effRisk, effReturn, effWeights] = frontcon(rMean, rCovar, N_total);
+[fRisk, fReturn, fWeights] = frontcon(rMean, rCovar);
+nPortfolios = size(fWeights,1);
 
-% now use the weights from the efficient frontier
-% to 
+% also calcuate the efficient frontier for test data
+% just for the sake of comparison
+%[fRiskSim, fReturnSim, fWeightsSim] = frontcon(mean(returnsTest), cov(returnsTest));
 
-% visualize the pair-wise correlation
-% for the pair-wise returns of 2 stocks
-figure(1);clf;
-box on;
-grid on;
-hold on;
-daspect([1 1 1]);
-plot(returns(:,1), returns(:,2), '.r');
-plot(returns(:,2), returns(:,3), '.b');
-plot(returns(:,1), returns(:,3), '.k');
+% get the weights for one portfolio using naiive method (i.e 1/n)
+% i.e. portfolio consists of assets with the same weights
+naiveWeights = ones(1, nAssets) *(1/nAssets);
 
-% visualize the pair-wise correlation but
-% on the simulated return
-figure(2);clf;
-box on;
-grid on;
-hold on;
-daspect([1 1 1]);
-plot(returns_(:,1), returns_(:,2), '.r');
-plot(returns_(:,2), returns_(:,3), '.b');
-plot(returns_(:,1), returns_(:,3), '.k');
+% calcuate the returns for the test data using the 2 different
+% weights: the efficient-frontier weights, and the naiive weights
+returnsTestEfficient = zeros(nTest, nPortfolios);
+for i=1:nPortfolios
+    returnsTestEfficient(:,i) = returnsTest * fWeights(i,:)';
+end
+returnsTestNaive = returnsTest*naiveWeights';
 
-% plot the E-V graph
+% get the average of all efficient returns
+% notice, we only want to get the average on non
+returnsTestEfficientAverage = zeros(nTest, 1);
+for i=1:nTest
+    returnsTestEfficientAverage(i) = mean(returnsTestEfficient(i,:));
+end
+
+% % visualize the pair-wise correlation
+% % for the pair-wise returns of 2 stocks
+% figure(1);clf;
+% box on;
+% grid on;
+% hold on;
+% daspect([1 1 1]);
+% plot(returnsTrain(:,1), returnsTrain(:,2), '.r');
+% plot(returnsTrain(:,2), returnsTrain(:,3), '.b');
+% plot(returnsTrain(:,1), returnsTrain(:,3), '.k');
+% plot(returnsTest(:,1), returnsTest(:,2), '.g');
+% plot(returnsTest(:,2), returnsTest(:,3), '.g');
+% plot(returnsTest(:,1), returnsTest(:,3), '.g');
+% 
+% % visualize the pair-wise correlation but
+% % on the simulated return
+% figure(2);clf;
+% box on;
+% grid on;
+% hold on;
+% daspect([1 1 1]);
+% plot(returnsTrainSim(:,1), returnsTrainSim(:,2), '.r');
+% plot(returnsTrainSim(:,2), returnsTrainSim(:,3), '.b');
+% plot(returnsTrainSim(:,1), returnsTrainSim(:,3), '.k');
+
+% plot the E-V graph (efficient frontier we get from the train data)
 figure(3); clf;
 box on;
 grid on;
 hold on;
-plot(effRisk, effReturn, 'k', 'LineWidth', 3);
+%plot(fRiskSim, fReturnSim, 'r', 'LineWidth', 3);
+plot(fRisk, fReturn, 'k', 'LineWidth', 2);
+plot(fRisk, fReturn, '.r', 'MarkerSize', 20);
 xlabel('Risk (V)', 'FontSize', 18);
 ylabel('Expected Return (E)', 'FontSize', 18);
 title('Efficient Portfolio Frontier', 'FontSize', 18);
+fig_legend = legend('Efficient Frontier', 'Efficient Portfolio', 'Location', 'southeast');
+set(fig_legend,'FontSize',16);
+
+% plot the returns for the efficient protfolios
+% vs. return from the naive portfolio
+colormap = autumn(nPortfolios+2);
+colormap = colormap(1:end-2,:);
+figure(4); clf;
+box on;
+grid on;
+hold on;
+plot(returnsTestNaive, 'b', 'LineWidth', 3);
+plot(returnsTestEfficientAverage, 'LineWidth', 3, 'Color', [0 0.7 0.2]);
+returnsTestEfficient = fliplr(returnsTestEfficient);
+for i=1:nPortfolios
+    plot(returnsTestEfficient(:,i), 'LineWidth', 1, 'Color', colormap(i,:));
+end
+returnsTestEfficient = fliplr(returnsTestEfficient);
+xlabel('Time (Days)', 'FontSize', 18);
+ylabel('Return (£)', 'FontSize', 18);
+title('Portfolio Return Over Time', 'FontSize', 18);
+fig_legend = legend('Naive Portfolio', 'Efficient Portfolio Avg.', 'Efficient Portfolios', 'Location', 'northwest');
+set(fig_legend,'FontSize',16);
 
 
 
