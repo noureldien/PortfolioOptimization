@@ -6,10 +6,14 @@ clc;
 mean_3assets = [0.1; 0.2; 0.15];
 covariance_3assets = 100 * [0.005, -0.010, 0.004; -0.010 0.040 -0.002; 0.004, -0.002, 0.023];
 
+% these different mean and covariance to see how is the effect
+% of changing the mean and covariance on the forntier
 % mean_3assets = [0.1; 0.2; 0.185];
 %covariance_3assets = 100 * [0.005, -0.010, 0.004; -0.010 0.040 -0.002; 0.004, -0.002, 0.08];
 
 N = 100;
+
+useCVX = false;
 
 effRisks = [];
 effReturns = [];
@@ -48,10 +52,14 @@ for i=1:3
     
     % get the frontier for the 2-asset portfolio, the return values
     % are the risk, return and weights of the portfolio
-    [effRisk, effReturn, effWeight] = naiveMV(mean_2assets, covariance_2assets, N);
-    
+    if (~useCVX)
+        [effRisk, effReturn, effWeight] = naiveMV(mean_2assets, covariance_2assets, N);
+    else
+        [effRisk, effReturn, effWeight] = naiveMV_CVX(mean_2assets, covariance_2assets, N);
+    end
+        
     % another method to calcuate efficient forntier
-    [effRisk, effReturn, effWeight] = frontcon(mean_2assets, covariance_2assets, N);
+    %[effRisk, effReturn, effWeight] = frontcon(mean_2assets, covariance_2assets, N);
     
     effRisks = [effRisks effRisk];
     effReturns = [effReturns effReturn];
@@ -59,7 +67,12 @@ for i=1:3
 end
 
 % also, get the frontier for the 3-asset portfolio
-[effRisk_3, effReturn_3, effWeight_3] = naiveMV(mean_3assets, covariance_3assets, N);
+
+if (~useCVX)
+    [effRisk_3, effReturn_3, effWeight_3] = naiveMV(mean_3assets, covariance_3assets, N);
+else
+    [effRisk_3, effReturn_3, effWeight_3] = naiveMV_CVX(mean_3assets, covariance_3assets, N);
+end
 
 % generate N random returns (normally distributed)
 % for the 3-asset system (portfolio)
