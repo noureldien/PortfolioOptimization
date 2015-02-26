@@ -4,7 +4,20 @@ clc;
 load('data\q_2.mat');
 
 % if we want to experience a smaller portfolio
-%returns = returns(:,1:5);
+%returns = returns(:,12:20);
+
+% returns need to be changed to percentages
+% for each return, covert it from
+% [100 120 150 100]
+% to
+% [0% 20% 50% 0%]
+for i=1:size(returns,2)
+    value = returns(1,i);
+    returns(:,i) = (returns(:,i) - value)/value;
+end
+% now remove the first opservation (it is only zeros
+% as it was used to convert returns to percentages)
+returns = returns(2:end,:);
 
 nAssets = size(returns,2);
 nTotal = size(returns,1);
@@ -36,18 +49,28 @@ naiveWeights = ones(1, nAssets) *(1/nAssets);
 
 % calcuate the returns for the test data using the 2 different
 % weights: the efficient-frontier weights, and the naiive weights
-returnsTestEfficient = zeros(nTest, nPortfolios);
+returnsEfficient = zeros(nTest, nPortfolios);
 for i=1:nPortfolios
-    returnsTestEfficient(:,i) = returnsTest * fWeights(i,:)';
+    returnsEfficient(:,i) = returnsTest * fWeights(i,:)';
 end
-returnsTestNaive = returnsTest*naiveWeights';
+returnsNaive = returnsTest*naiveWeights';
 
 % get the average of all efficient returns
 % notice, we only want to get the average on non
-returnsTestEfficientAverage = zeros(nTest, 1);
+returnsEfficientAverage = zeros(nTest, 1);
 for i=1:nTest
-    returnsTestEfficientAverage(i) = mean(returnsTestEfficient(i,:));
+    returnsEfficientAverage(i) = mean(returnsEfficient(i,:));
 end
+
+% now, we want to calcuate the Sharpe Ratio for the returns
+% with risk free = 5%
+riskFree = 20/100;
+sharpeEfficient = zeros(1, nPortfolios);
+for i=1:nPortfolios
+    sharpeEfficient(i) = (mean(returnsEfficient(:,i)) - riskFree)/std(returnsEfficient(:,i));
+end
+sharpeNaive = (mean(returnsNaive) - riskFree)/std(returnsNaive);
+sharpeEfficientAverage = mean(sharpeEfficient);
 
 % % visualize the pair-wise correlation
 % % for the pair-wise returns of 2 stocks
@@ -96,18 +119,48 @@ figure(4); clf;
 box on;
 grid on;
 hold on;
-plot(returnsTestNaive, 'b', 'LineWidth', 3);
-plot(returnsTestEfficientAverage, 'LineWidth', 3, 'Color', [0 0.7 0.2]);
-returnsTestEfficient = fliplr(returnsTestEfficient);
+plot(returnsNaive, 'b', 'LineWidth', 3);
+plot(returnsEfficientAverage, 'LineWidth', 3, 'Color', [0 0.7 0.2]);
+returnsEfficient = fliplr(returnsEfficient);
 for i=1:nPortfolios
-    plot(returnsTestEfficient(:,i), 'LineWidth', 1, 'Color', colormap(i,:));
+    plot(returnsEfficient(:,i), 'LineWidth', 1, 'Color', colormap(i,:));
 end
-returnsTestEfficient = fliplr(returnsTestEfficient);
+returnsEfficient = fliplr(returnsEfficient);
 xlabel('Time (Days)', 'FontSize', 18);
-ylabel('Return (£)', 'FontSize', 18);
+ylabel('Return (%)', 'FontSize', 18);
 title('Portfolio Return Over Time', 'FontSize', 18);
 fig_legend = legend('Naive Portfolio', 'Efficient Portfolio Avg.', 'Efficient Portfolios', 'Location', 'northwest');
 set(fig_legend,'FontSize',16);
+
+% plot the sharpe values
+colormap = autumn(nPortfolios);
+figure(5); clf;
+box on;
+grid on;
+hold on;
+plot([1 nPortfolios], [sharpeNaive sharpeNaive], 'LineWidth', 2, 'Color', 'b');
+plot([1 nPortfolios], [sharpeEfficientAverage sharpeEfficientAverage], 'LineWidth', 2, 'Color', [0 0.7 0.2]);
+sharpeEfficient = fliplr(sharpeEfficient);
+for i=1:nPortfolios
+    plot(i, sharpeEfficient(i), '.r', 'MarkerSize', 30, 'Color', colormap(i,:));
+    plot(i, sharpeEfficient(i), '.k', 'MarkerSize', 10);
+end
+sharpeEfficient = fliplr(sharpeEfficient);
+xlabel('Portfolio', 'FontSize', 18);
+ylabel('Ratio', 'FontSize', 18);
+title(strcat('Sharpe Ratio - Risk Free:', int2str(riskFree*100) ,'%' ), 'FontSize', 18);
+fig_legend = legend('Naive Portfolio', 'Efficient Portfolio Avg.', 'Efficient Portfolios', 'Location', 'southwest');
+set(fig_legend,'FontSize',14);
+
+
+
+
+
+
+
+
+
+
 
 
 
