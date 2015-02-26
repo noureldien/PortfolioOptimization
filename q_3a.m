@@ -19,14 +19,14 @@ end
 returns = returns(2:end,:);
 
 % do the same for ftse
-%ftse = (ftse - ftse(1))/ftse(1);
-%ftse = ftse(2:end,:);
+ftse = (ftse - ftse(1))/ftse(1);
+ftse = ftse(2:end,:);
 
 % for testing purpose, if we want the
 % index to be the avarage of 20 assets we have
 % not the real market index
-[~, ftse] = portfolioAverageReturn(returns);
-ftse = ftse';
+%[~, ftse] = portfolioAverageReturn(returns);
+%ftse = ftse';
 
 nAssets = size(returns,2);
 nTotal = size(returns,1);
